@@ -38,16 +38,6 @@ namespace osuCrypto
         if (hasBaseOts() == false)
             genBaseOts(prng, chl);
 
-        block seed = prng.get<block>();
-        u8 theirComm[RandomOracle::HashSize];
-
-        auto fu = chl.asyncRecv(theirComm, RandomOracle::HashSize, [&]()
-        {
-            chl.asyncSendCopy((u8*)&seed, sizeof(block));
-        });
-
-
-
         static const u64 superBlkSize(8);
 
         // this will be used as temporary buffers of 128 columns,
@@ -142,23 +132,6 @@ namespace osuCrypto
             doneIdx = stopIdx;
         }
 
-
-
-        fu.get();
-        block theirSeed;
-        chl.recv((u8*)&theirSeed, sizeof(block));
-
-        RandomOracle sha;
-        sha.Update(theirSeed);
-        u8 cc[RandomOracle::HashSize];
-        sha.Final(cc);
-        if (memcmp(theirComm, cc, RandomOracle::HashSize))
-            throw std::runtime_error(LOCATION);
-
-
-        std::array<block, 4> keys;
-        PRNG(seed ^ theirSeed).get(keys.data(), keys.size());
-        mMultiKeyAES.setKeys(keys);
     }
 
 
@@ -331,8 +304,8 @@ namespace osuCrypto
         // this is potentially dangerous. We dont have a guarantee that mT1 will still exist when
         // the network gets around to sending this. Oh well.
 
-        mHasPendingSendFuture = true;
-        mPendingSendFuture = chl.asyncSendFuture((u8*)(mT1.data() + (mCorrectionIdx * mT1.stride())), mT1.stride() * sendCount * sizeof(block));
+        mHasPendingSendFuture = false;
+        chl.asyncSendCopy((u8*)(mT1.data() + (mCorrectionIdx * mT1.stride())), mT1.stride() * sendCount * sizeof(block));
 
         mCorrectionIdx += sendCount;
     }

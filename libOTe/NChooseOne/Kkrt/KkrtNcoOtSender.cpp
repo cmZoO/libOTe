@@ -79,19 +79,6 @@ namespace osuCrypto
 
         static const u8 superBlkSize(8);
 
-        block seed = prng.get<block>(), theirSeed;
-        RandomOracle hasher;
-        hasher.Update(seed);
-        u8 comm[RandomOracle::HashSize];
-        hasher.Final(comm);
-
-
-        chl.asyncSend(comm, RandomOracle::HashSize);
-
-
-        auto future = chl.asyncRecv((u8*)&theirSeed, sizeof(block));
-
-
         // round up
         numOTExt = ((numOTExt + 127) / 128) * 128;
 
@@ -170,14 +157,6 @@ namespace osuCrypto
             doneIdx = stopIdx;
         }
 
-
-        future.get();
-        chl.asyncSendCopy((u8*)&seed, sizeof(block));
-
-        std::array<block, 4> keys;
-        PRNG(seed ^ theirSeed).get(keys.data(), keys.size());
-        mMultiKeyAES.setKeys(keys);
-
     }
 
     void KkrtNcoOtSender::encode(u64 otIdx, const void * input, void * dest, u64 destSize)
@@ -197,6 +176,7 @@ namespace osuCrypto
         mMultiKeyAES.ecbEncNBlocks(choice.data(), code.data());
 
         auto* corVal = mCorrectionVals.data() + otIdx * mCorrectionVals.stride();
+
         auto* tVal = mT.data() + otIdx * mT.stride();
 
 
@@ -251,7 +231,6 @@ namespace osuCrypto
 
         memcpy(dest, hashBuff, std::min(destSize, sizeof(block)));
 #endif
-
 
     }
 
