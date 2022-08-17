@@ -219,7 +219,8 @@ namespace osuCrypto
 #ifdef KKRT_SHA_HASH
         RandomOracle  sha1(destSize);
         // hash it all to get rid of the correlation.
-        sha1.Update((u8*)code.data(), sizeof(block) * mT.stride());
+        sha1.Update((u8*)code.data(), 456 / 8);
+        // sha1.Update((u8*)code.data(), sizeof(block) * mT.stride());
         sha1.Final((u8*)dest);
 #else
         std::array<block, 10> aesBuff;

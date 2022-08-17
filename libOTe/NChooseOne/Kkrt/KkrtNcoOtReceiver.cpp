@@ -230,7 +230,8 @@ namespace osuCrypto
 
         // now hash it to remove the correlation.
         RandomOracle  sha1(destSize);
-        sha1.Update((u8*)mT0[otIdx].data(), mT0[otIdx].size() * sizeof(block));
+        // sha1.Update((u8*)mT0[otIdx].data(), mT0[otIdx].size() * sizeof(block));
+        sha1.Update((u8*)mT0[otIdx].data(), 456 / 8);
         sha1.Final((u8*)dest);
 #else
         s
@@ -305,7 +306,15 @@ namespace osuCrypto
         // the network gets around to sending this. Oh well.
 
         mHasPendingSendFuture = false;
-        chl.asyncSendCopy((u8*)(mT1.data() + (mCorrectionIdx * mT1.stride())), mT1.stride() * sendCount * sizeof(block));
+        auto iter1 = (u8*)(mT1.data() + (mCorrectionIdx * mT1.stride()));
+        auto iter2 = iter1;
+        for (int i = 0; i < sendCount; i++) {
+            memcpy(iter1, iter2, 456 / 8);
+            iter1 += 456 / 8;
+            iter2 += mT1.stride() * sizeof(block);
+        }
+        chl.asyncSendCopy((u8*)(mT1.data() + (mCorrectionIdx * mT1.stride())), sendCount * 456 / 8);
+        // chl.asyncSendCopy((u8*)(mT1.data() + (mCorrectionIdx * mT1.stride())), mT1.stride() * sendCount * sizeof(block));
 
         mCorrectionIdx += sendCount;
     }
